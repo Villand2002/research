@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 from typing import List, Tuple
 from scipy.stats import kendalltau
+from typing import List, Dict, Tuple
+import networkx as nx
+
 
 class Agent:
     def __init__(self, agent_id: int, acceptable_categories: List[int]):
@@ -337,39 +340,68 @@ def nx_rebuild_graph(agents_obj: Agents, categories_obj: List[Category], banned_
 
 
 # MMA
+def execute_mma(agents_obj: Agents, categories_obj: List[Category]) -> List[Tuple[int, int]]:
+    """
+    Maximum Matching Adjustment (MMA) Algorithm
+    """
+    agents = agents_obj.agents
+    agent_ids = [ag.agent_id for ag in agents]
 
-def execute_mma(agents_obj: Agents, categories_obj: List[Category]):
-    """
-    MMAアルゴリズムの実行
-    """
-    # ここにMMAアルゴリズムの実装を追加
-    unmatched_agents = set(ag.agent_id for ag in agents_obj.agents)
-    while unmatched_agents:
-        for ag in list(unmatched_agents):
-            # エージェントが申し込み可能なカテゴリを取得
-            acceptable_cats = [cat for cat in categories_obj if ag in cat.eligible_agents]
-            if not acceptable_cats:
-                unmatched_agents.remove(ag)
-                continue
-            
-            # 最も優先度の高いカテゴリに申し込む
-            preferred_cat = min(acceptable_cats, key=lambda c: c.priority.index(ag))
-            
-            # カテゴリの受け入れ判定
-            if preferred_cat.capacity > 0:
-                preferred_cat.capacity -= 1
-                unmatched_agents.remove(ag)
-            else:
-                # カテゴリが満員の場合、他のエージェントと比較して追い出し判定
-                lowest_priority_agent = max(preferred_cat.priority, key=lambda x: preferred_cat.priority.index(x) if x in preferred_cat.eligible_agents else -1)
-                if preferred_cat.priority.index(ag) < preferred_cat.priority.index(lowest_priority_agent):
-                    # 追い出し
-                    unmatched_agents.add(lowest_priority_agent)
-                    preferred_cat.eligible_agents.remove(lowest_priority_agent)
-                    preferred_cat.eligible_agents.append(ag)
-                    unmatched_agents.remove(ag)
-                    
-    return [(ag.agent_id, cat.category_id) for cat in categories_obj for ag in agents_obj.agents if ag.agent_id in cat.eligible_agents]
+    # Eligibility Graph G =を構築
+    G = nx.Graph()
+    for ag in agents:
+        for cat in categories_obj:
+            if ag.agent_id in cat.eligible_agents:     # eligibility edge
+                G.add_edge(f"A_{ag.agent_id}", f"C_{cat.category_id}")
+
+    #Step 2: 最大マッチング μ を求める 
+    max_matching = nx.algorithms.matching.max_weight_matching(G, maxcardinality=True)
+
+    # μ の内部表現 {agent → category}
+    mu: Dict[int, int] = {}
+
+    for a, c in max_matching:
+        if a.startswith("A_"):
+            agent = int(a[2:])
+            category = int(c[2:])
+        else:
+            agent = int(c[2:])
+            category = int(a[2:])
+        mu[agent] = category
+
+    # 現在 unmatched の agent をリストで持つ
+    unmatched_agents = [ag for ag in agent_ids if ag not in mu]
+
+    for i in unmatched_agents:
+        # i が eligible なカテゴリを取得（順番が必要）
+        cats = [cat for cat in categories_obj if i in cat.eligible_agents]
+
+        for c in cats:
+            cat_id = c.category_id
+
+            # category cat_id に現在入っている agent を列挙
+            matched_agents = [a for a, cat in mu.items() if cat == cat_id]
+
+            if len(matched_agents) < c.capacity:
+                # まだ空きがある → i を追加
+                mu[i] = cat_id
+                break
+
+            # 削除されるのは最も priority の低い agent i'
+            # priority はリストの後ろほど priority が低いとする
+            priorities = c.priority
+            i_prime = max(matched_agents, key=lambda a: priorities.index(a))
+
+            # i の方が優先度高い？
+            if priorities.index(i) < priorities.index(i_prime):
+                # 追い出し処理
+                mu[i] = cat_id
+                del mu[i_prime]
+                break
+
+    # --- 最終的なマッチングを (agent, category) のリストで返す ---
+    return list(mu.items())
+
 
 
 # 使用例
@@ -448,7 +480,9 @@ if __name__ == "__main__":
     print("\nMatching result:")
     for a, c in matching:
         print(f"Agent {a} → Category {c}")
-
-
-
-
+        
+    # MMAアルゴリズムの実行例
+    mma_matching = execute_mma(agents_obj, categories_obj)
+    print("\nMMA Matching result:")
+    for a, c in mma_matching:
+        print(f"Agent {a} → Category {c}")
