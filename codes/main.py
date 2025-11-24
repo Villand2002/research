@@ -1,7 +1,7 @@
 from agent import Agent, Agents, Category
 from generate_data import generate_priorities, analyze_preferences, generate_capacities
 from graph_function import assign_eligibility_random, assign_category_priorities
-from algorithm import rev_algorithm, execute_mma
+from algorithm import MMASolver, rev_algorithm, execute_mma
 
 if __name__ == "__main__":
     # --- パラメータ設定 ---
@@ -55,3 +55,31 @@ if __name__ == "__main__":
     print("Matching result (Top 5):")
     for a, c in mma_matching[:5]:
         print(f"Agent {a} -> Category {c}")
+
+
+# MMAの例
+    agents = ['i1', 'i2', 'i3']
+    categories = ['c1', 'c2']
+    capacities = {'c1': 1, 'c2': 1}
+    
+    # 優先順位 (左が優先度高)
+    # c1: i2 > i1 > empty > i3 (i3は適格外とするか、リスト末尾とする。ここでは適格リストとして定義)
+    # c2: i2 > i3 > empty > i1
+    priorities = {
+        'c1': ['i2', 'i1'],       # i3は不適格(emptyより下)と仮定
+        'c2': ['i2', 'i3', 'i1']  # i1は不適格の可能性もあるが、例として含める
+    }
+    
+    # ※論文のFig 1を見ると、c1に対してi3は適格ではない(edgesがない)。c2に対してi1は適格ではない。
+    # グラフの定義に合わせて修正します [cite: 103]
+    priorities_corrected = {
+        'c1': ['i2', 'i1'], 
+        'c2': ['i2', 'i3']
+    }
+
+    mma = MMASolver(agents, categories, capacities, priorities_corrected)
+    result = mma.solve()
+    
+    print("\nFinal Matching:")
+    for agent, cat in sorted(result.items()):
+        print(f"{agent} -> {cat}")
