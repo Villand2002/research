@@ -1,6 +1,6 @@
 from agent import Agent, Agents, Category
 from generate_data import generate_priorities, analyze_preferences, generate_capacities
-from graph_function import assign_eligibility_random, assign_category_priorities
+from graph_funtion import assign_eligibility_random, assign_category_priorities
 from algorithm import MMASolver, rev_algorithm, execute_mma
 
 if __name__ == "__main__":
