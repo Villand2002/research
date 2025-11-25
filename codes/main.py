@@ -1,7 +1,9 @@
 from agent import Agent, Agents, Category
 from generate_data import generate_priorities, analyze_preferences, generate_capacities
 from graph_funtion import assign_eligibility_random, assign_category_priorities
-from algorithm import MMASolver, rev_algorithm, execute_mma
+from mma import MMASolver,  execute_mma
+from rev import rev_algorithm
+from scu import SCUSolver
 
 if __name__ == "__main__":
     # --- パラメータ設定 ---
@@ -83,3 +85,37 @@ if __name__ == "__main__":
     print("\nFinal Matching:")
     for agent, cat in sorted(result.items()):
         print(f"{agent} -> {cat}")
+        
+        
+        
+    # Example 4 Settings
+    agents = ['i1', 'i2', 'i3', 'i4', 'i5', 'i6']
+    categories = ['c1', 'c2', 'c3']
+    
+    # Beneficial: c1, c3
+    # Open: c2
+    beneficial = ['c1', 'c3']
+    
+    # Precedence: c1 > c2 > c3
+    precedence = ['c1', 'c2', 'c3']
+    
+    capacities = {'c1': 1, 'c2': 1, 'c3': 1}
+    
+    # Priorities (論文 p.18)
+    # c1: i2 > i1 > i3
+    # c2: i2 > i4 > i6 > i3 > i5 > i1
+    # c3: i5 > i4 > i6
+    priorities = {
+        'c1': ['i2', 'i1', 'i3'],
+        'c2': ['i2', 'i4', 'i6', 'i3', 'i5', 'i1'],
+        'c3': ['i5', 'i4', 'i6']
+    }
+
+    print("--- SCU Algorithm (Example 4) ---")
+    scu = SCUSolver(agents, categories, capacities, priorities, precedence, beneficial)
+    result = scu.solve()
+    
+    # 結果表示
+    print("\nFinal Matching:")
+    for a in sorted(result.keys()):
+        print(f"{a} -> {result[a]}")

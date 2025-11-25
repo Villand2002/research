@@ -1,143 +1,214 @@
 import networkx as nx
-from typing import Dict, List, Tuple
 
-
-class Agent:
-    def __init__(self, agent_id: int, acceptable_categories: List[int]):
-        self.agent_id = agent_id
-        self.acceptable_categories = acceptable_categories
-
-    def show_info(self):
-        print(f"Agent ID: {self.agent_id}, Acceptable Categories: {self.acceptable_categories}")
+class SCUSolver:
+    def __init__(self, agents, categories, capacities, priorities, precedence_order, beneficial_categories):
+        """
+        SCU (Sequential Category Updating) Rule Solver
         
-class Agents:
-    def __init__(self, agents: List[Agent], agent_number: int):
+        Parameters:
+        - agents: List of agent IDs
+        - categories: List of category IDs
+        - capacities: Dict {category: capacity}
+        - priorities: Dict {category: [agent_list_sorted_by_priority]}
+        - precedence_order: List of categories in processing order (earlier is higher precedence)
+        - beneficial_categories: Set or List of categories considered "beneficial" (C*)
+        """
         self.agents = agents
-        self.agent_number = agent_number
+        self.categories = categories
+        self.capacities = capacities
+        self.priorities = priorities
+        self.precedence = precedence_order
+        self.beneficial_cats = set(beneficial_categories)
+        self.open_cats = set(categories) - self.beneficial_cats
 
-    def show_all_info(self):
-        for agent in self.agents:
-            agent.show_info()
+    def _build_base_graph(self, current_assignments=None):
+        """
+        フローネットワークの基本構造を作成
+        current_assignments: 既に確定した {agent: category} の辞書
+        """
+        if current_assignments is None:
+            current_assignments = {}
+            
+        assigned_agents = set(current_assignments.keys())
+        
+        # グラフ構築
+        G = nx.DiGraph()
+        S, T = 'source', 'sink'
+        C_0_NODE, C_STAR_NODE = 'C_0_super', 'C_star_super'
+        
+        # 1. Source -> Agents (未割り当てのエージェントのみ)
+        # 既に割り当てられたエージェントは、後のロジックで「確定枠」として処理するためグラフには含めない
+        # （あるいは含めて強制的に流す方法もあるが、残余グラフで考える方がシンプル）
+        remaining_agents = [a for a in self.agents if a not in assigned_agents]
+        for agent in remaining_agents:
+            G.add_edge(S, agent, capacity=1)
+            
+        # 2. Agents -> Categories
+        for cat in self.categories:
+            # カテゴリの現在の残り容量を計算
+            # (基本容量) - (既にこのカテゴリに確定した人数)
+            assigned_count = sum(1 for c in current_assignments.values() if c == cat)
+            current_cap = self.capacities.get(cat, 0) - assigned_count
+            
+            # 容量が残っている場合のみエッジを張る
+            # ただし、MaxFlowの計算上、カテゴリノード自体の容量制限が必要
+            # NetworkXではノード容量を直接扱えないため、
+            # Agent -> CatNode -> SuperNode の SuperNodeへのエッジで容量を制限する
+            
+            # Agent -> Category エッジ
+            # 優先順位リストに載っている(適格な)エージェントのみ
+            for agent in self.priorities.get(cat, []):
+                if agent in remaining_agents:
+                    G.add_edge(agent, cat, capacity=1)
 
-class Category:
-    def __init__(self, category_id: int, capacity: int, priority: List[int]):
-        self.category_id = category_id
-        self.capacity = capacity
-        self.priority = priority
-        self.eligible_agents = []  # ← 後で自動生成する
+            # 3. Categories -> Super Nodes (C_0 or C*)
+            # ここでカテゴリごとの容量制限をかける
+            if cat in self.beneficial_cats:
+                G.add_edge(cat, C_STAR_NODE, capacity=current_cap)
+            else:
+                G.add_edge(cat, C_0_NODE, capacity=current_cap)
+                
+        return G, S, T, C_0_NODE, C_STAR_NODE
 
-    def show_info(self):
-        print(f"Category ID: {self.category_id}, Capacity: {self.capacity}, Priority: {self.priority}, Eligible: {self.eligible_agents}")
+    def _calc_max_values(self):
+        """
+        Step 1 & 2: 
+        b = 最大受益者割当数 (Max flow to C*)
+        m = 最大全体割当数 (Max total flow given b)
+        """
+        G, S, T, C0, CS = self._build_base_graph()
+        
+        # --- Step 1: Compute b (Max flow to C*) ---
+        # C0 -> T の容量を 0 にして、C* へのフローを最大化
+        G.add_edge(C0, T, capacity=0)
+        G.add_edge(CS, T, capacity=float('inf'))
+        
+        b = nx.maximum_flow(G, S, T)[0]
+        
+        # --- Step 2: Compute m (Max total flow given b) ---
+        # 論文では "Set lower bound of (C*, T) to b" とあるが、
+        # MaxFlowアルゴリズムの性質上、まずC*へのフローを確保しつつ全体を最大化するのは
+        # 適切な容量設定でシミュレートできる。
+        # ここでは単純に全体の最大フローを計算すれば、Lemma 1により整合性が保証される。
+        # (ただし、bが確保できることは確認済み)
+        
+        # 容量制限を解除/設定
+        # C0 -> T: 無限 (or 全エージェント数)
+        # C* -> T: 無限 (or 全エージェント数)
+        # 単純な最大マッチング数を求めればよい
+        G.remove_edge(C0, T)
+        G.remove_edge(CS, T)
+        G.add_edge(C0, T, capacity=float('inf'))
+        G.add_edge(CS, T, capacity=float('inf'))
+        
+        m = nx.maximum_flow(G, S, T)[0]
+        
+        return int(b), int(m)
 
+    def _can_assign(self, agent, category, current_assignments, target_b, target_total):
+        """
+        Step 3の判定ロジック:
+        agent を category に割り当てた状態で、
+        残りのエージェントを使って「目標とするBeneficial数(target_b)」と「目標とする全体数(target_total)」
+        を達成できるか判定する。
+        """
+        # 仮の割り当てを作成
+        temp_assignments = current_assignments.copy()
+        temp_assignments[agent] = category
+        
+        # 残りの必要数を計算
+        # 既に割り当てられた人たち + 今回の仮割り当て
+        current_b_count = sum(1 for c in temp_assignments.values() if c in self.beneficial_cats)
+        current_total_count = len(temp_assignments)
+        
+        rem_b_needed = target_b - current_b_count
+        rem_total_needed = target_total - current_total_count
+        
+        # 目標を超えてしまっていたら不可能 (例: C*枠がもう一杯なのにC*に入れようとした)
+        # ただし b は「最大」なので、それ以下になることは許容されない（Max Cardinality維持のため）
+        # 論文のアルゴリズムは「Lower bound」を設定するので、ピッタリ達成できるかを見る
+        if rem_b_needed < 0: return False # あり得ないが念のため
+        # C0への必要数 (全体 - C*)
+        rem_open_needed = rem_total_needed - rem_b_needed
+        if rem_open_needed < 0: return False
 
-def assign_eligibility(agents_obj, categories_obj):
-    """
-    Agent.acceptable_categories を元に Category.eligible_agents を生成する
-    """
-    for cat in categories_obj:
-        cat.eligible_agents = []
+        # 残余グラフを構築してチェック
+        G, S, T, C0, CS = self._build_base_graph(temp_assignments)
+        
+        # Sinkへのエッジ容量を「残りの必要数」に制限する
+        # これでMaxFlowがこの容量一杯まで流れれば、目標達成可能ということ
+        G.add_edge(C0, T, capacity=rem_open_needed)
+        G.add_edge(CS, T, capacity=rem_b_needed)
+        
+        flow_val = nx.maximum_flow(G, S, T)[0]
+        
+        # フローが目標値 (残りの必要総数) に達しているか？
+        return flow_val == rem_total_needed
 
-    for ag in agents_obj.agents:
-        for c in ag.acceptable_categories:
-            for cat in categories_obj:
-                if cat.category_id == c:
-                    cat.eligible_agents.append(ag.agent_id)
+    def solve(self):
+        """
+        Algorithm 5: Main Procedure
+        """
+        # 1. b (最大受益者数) と m (最大全体数) を計算
+        b, m = self._calc_max_values()
+        print(f"Calculated Max Values -> m (Total): {m}, b (Beneficial): {b}")
+        
+        # 2. Sequential Updating Procedure
+        # X: 確定した割り当て {agent: category}
+        X = {}
+        
+        # カテゴリをPrecedence順に処理
+        for c in self.precedence:
+            # このカテゴリに適格なエージェントを優先順位順に取得
+            # 既にXに含まれているエージェントは除外
+            eligible_agents = [a for a in self.priorities.get(c, []) if a not in X]
+            
+            # 各エージェントについて判定
+            for i in eligible_agents:
+                # カテゴリの定員チェック (既に埋まっていたらスキップ)
+                assigned_in_c = sum(1 for cat in X.values() if cat == c)
+                if assigned_in_c >= self.capacities.get(c, 0):
+                    break # このカテゴリは満員
+                
+                # 判定: i を c に割り当てても、最終的に m と b を達成できるか？
+                if self._can_assign(i, c, X, b, m):
+                    X[i] = c
+                    # print(f"Assigned {i} -> {c}")
+        
+        return X
 
-
-
-def compute_maximum_matching(agents_obj, categories_obj, fixed_assignments=None):
-    G = nx.Graph()
-
-    if fixed_assignments is None:
-        fixed_assignments = {}
-
-    # eligibility edges を作る
-    for ag in agents_obj.agents:
-        a_id = ag.agent_id
-
-        if a_id in fixed_assignments:
-            continue
-
-        for cat in categories_obj:
-            if a_id in cat.eligible_agents:
-                G.add_edge(f"A_{a_id}", f"C_{cat.category_id}")
-
-    # 最大マッチング
-    match = nx.algorithms.matching.max_weight_matching(G, maxcardinality=True)
-
-    mu = dict(fixed_assignments)
-
-    for x, y in match:
-        if x.startswith("A_"):
-            a = int(x[2:])
-            c = int(y[2:])
-        else:
-            a = int(y[2:])
-            c = int(x[2:])
-        mu[a] = c
-
-    return mu
-def execute_scu(agents_obj, categories_obj, category_order):
-    """
-    SCU Algorithm Implementation
-    category_order: 論文の ⊳ の strict order のリスト (desc)
-    """
+# ==========================================
+# 実行例 (論文の Example 4 を再現)
+# ==========================================
+if __name__ == "__main__":
+    # Example 4 Settings
+    agents = ['i1', 'i2', 'i3', 'i4', 'i5', 'i6']
+    categories = ['c1', 'c2', 'c3']
     
-    # eligibility 自動生成
-    assign_eligibility(agents_obj, categories_obj)
+    # Beneficial: c1, c3
+    # Open: c2
+    beneficial = ['c1', 'c3']
+    
+    # Precedence: c1 > c2 > c3
+    precedence = ['c1', 'c2', 'c3']
+    
+    capacities = {'c1': 1, 'c2': 1, 'c3': 1}
+    
+    # Priorities (論文 p.18)
+    # c1: i2 > i1 > i3
+    # c2: i2 > i4 > i6 > i3 > i5 > i1
+    # c3: i5 > i4 > i6
+    priorities = {
+        'c1': ['i2', 'i1', 'i3'],
+        'c2': ['i2', 'i4', 'i6', 'i3', 'i5', 'i1'],
+        'c3': ['i5', 'i4', 'i6']
+    }
 
-    # 初期 μ を最大マッチングで作る
-    mu = compute_maximum_matching(agents_obj, categories_obj)
-
-    X = set()   # 確定 agent
-    Y = set()   # 処理済カテゴリ
-
-    # categories を辞書化して扱いやすくする
-    cat_map = {c.category_id: c for c in categories_obj}
-
-    for c in category_order:
-        if c in Y:
-            continue
-
-        cat = cat_map[c]
-
-        while True:
-            assigned_to_c = [i for i, cc in mu.items() if cc == c and i in X]
-
-            if len(assigned_to_c) >= cat.capacity:
-                break
-
-            candidates = [
-                ag.agent_id for ag in agents_obj.agents
-                if ag.agent_id not in X and ag.agent_id in cat.eligible_agents
-            ]
-
-            if not candidates:
-                break
-
-            # priority に基づき昇順（小さい index = priority 高）
-            candidates.sort(key=lambda i: cat.priority.index(i))
-
-            updated = False
-
-            for i in candidates:
-                mu_prime = dict(mu)
-                mu_prime[i] = c
-
-                mu_check = compute_maximum_matching(
-                    agents_obj, categories_obj,
-                    fixed_assignments={i: c}
-                )
-
-                if len(mu_check) == len(mu_prime):
-                    mu = mu_prime
-                    X.add(i)
-                    updated = True
-                    break
-
-            if not updated:
-                break
-
-        Y.add(c)
-
-    return list(mu.items())
+    print("--- SCU Algorithm (Example 4) ---")
+    scu = SCUSolver(agents, categories, capacities, priorities, precedence, beneficial)
+    result = scu.solve()
+    
+    # 結果表示
+    print("\nFinal Matching:")
+    for a in sorted(result.keys()):
+        print(f"{a} -> {result[a]}")
