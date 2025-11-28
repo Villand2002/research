@@ -1,4 +1,6 @@
 import networkx as nx
+from codes.agent import Agents, Category
+
 
 class SCUSolver:
     def __init__(self, agents, categories, capacities, priorities, precedence_order, beneficial_categories):

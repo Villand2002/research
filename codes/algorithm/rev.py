@@ -1,7 +1,7 @@
 import networkx as nx
 from typing import List, Tuple, Dict
-from agent import Agents, Category
-from graph_funtion import compute_max_matching_size, nx_rebuild_graph
+from codes.agent import Agents, Category
+from codes.graph_funtion import compute_max_matching_size, nx_rebuild_graph
 
 def rev_algorithm(agents_obj: Agents, categories_obj: List[Category]):
     """REV Algorithm implementation"""

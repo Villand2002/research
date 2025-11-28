@@ -1,9 +1,9 @@
 from agent import Agent, Agents, Category
-from generate_data import generate_priorities, analyze_preferences, generate_capacities
+from codes.data_generation.mallows import generate_priorities, analyze_preferences, generate_capacities
 from graph_funtion import assign_eligibility_random, assign_category_priorities
-from mma import MMASolver,  execute_mma
-from rev import rev_algorithm
-from scu import SCUSolver
+from algorithm.mma import MMASolver,  execute_mma
+from algorithm.rev import rev_algorithm
+from algorithm.scu import SCUSolver
 
 if __name__ == "__main__":
     # --- パラメータ設定 ---
