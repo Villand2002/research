@@ -1,0 +1,139 @@
+\documentclass{article}
+\usepackage{PRIMEarxiv}
+\usepackage[ruled]{algorithm2e} % For algorithms
+\renewcommand{\algorithmcfname}{ALGORITHM}
+\usepackage{amsfonts}       % Blackboard math symbols
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{authblk}
+\usepackage{booktabs}       % Professional-quality tables
+\usepackage{boxedminipage}
+\usepackage{caption} 
+\usepackage{cleveref}
+\usepackage{comment}
+\usepackage{enumitem}
+\usepackage{fancyhdr}       % Header
+\usepackage{graphicx}       % Graphics
+\usepackage[utf8]{inputenc} % Allow UTF-8 input
+\usepackage{lipsum}
+\usepackage{microtype}      % Microtypography
+\usepackage{multirow}
+\usepackage{natbib}  
+\usepackage{nicefrac}       % Compact symbols for 1/2, etc.
+\usepackage{pifont}
+\usepackage{pgfplots}
+\usepackage[T1]{fontenc}    % Use 8-bit T1 fonts
+\usepackage{thm-restate}
+\usepackage{threeparttable}
+\usepackage{tikz}
+\usepackage{url}            % Simple URL typesetting
+\usepackage{xcolor}         % Colors
+\usepackage{xr}
+
+\setlist{nolistsep}
+\usetikzlibrary{arrows}
+\usetikzlibrary{patterns}
+\SetKw{Break}{break}
+
+%Header
+\pagestyle{fancy}
+\thispagestyle{empty}
+
+
+% Update your Headers here
+\fancyhead[LO]{Headers}
+% \fancyhead[RE]{Firstauthor and Secondauthor} % Firstauthor et al. if more than 2 - must use \documentclass[twoside]{article}
+
+\newtheorem{fact}{Fact}%
+\newtheorem{lemma}{Lemma}%
+\newtheorem{definition}{Definition}%
+\newtheorem{theorem}{Theorem}%
+\newtheorem{proposition}{Proposition}%
+\newtheorem{corollary}{Corollary}%
+\newtheorem{conjecture}{Conjecture}%
+\newtheorem{observation}{Observation}%
+\newtheorem{example}{Example}
+\newtheorem{open}{Open Problem}
+
+\newcommand{\zh}[1]{\textcolor{red}{\textbf{Zhaohong says:} #1}}
+\newcommand{\zhnew}[1]{\textcolor{black}{#1}}
+\newcommand{\Ch}{\mathrm{Ch}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\newcommand{\cmark}{\ding{51}} % Checkmark
+\newcommand{\xmark}{\ding{55}} % Cross
+
+\allowdisplaybreaks
+
+
+
+\title{\bf Title}
+
+
+\author[1,2]{Zhaohong Sun}
+
+\affil[1]{Kyushu University, Japan}
+\affil[2]{CyberAgent, Japan}
+
+\date{\vspace{-10mm}}
+
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    
+\end{abstract}
+
+
+\section{Data Structure}
+
+
+\subsection{Agent}
+\begin{itemize}
+    \item S\_Id: integer
+    \item acceptable categories: set of integers
+\end{itemize}
+
+\subsection{Categories}
+\begin{itemize}
+    \item C\_Id: integer
+    \item priority: list of integers
+    \item capacity: integer
+\end{itemize}
+
+\subsection{Outcome}
+\begin{itemize}
+    \item data\_id
+    \item algorithm\_name
+    \item matching: dictionary
+    \item 
+\end{itemize}
+
+
+\section{Data Generation}
+
+this is a function
+\begin{itemize}
+\item input: number of agents, number of categories,  Mallows model (parameter)
+\item output: a data set
+\end{itemize}
+
+
+\section{Algorithm}
+
+% DA, REV, MMA, SCU(少しむずい), SAFE, RANK
+
+% 最大マッチングの計算方法をしらべる(da,safe以外はグラフが必要)
+% flow network(scu)
+
+
+
+\bibliographystyle{plainnat}
+\bibliography{reference}  
+
+\end{document}
