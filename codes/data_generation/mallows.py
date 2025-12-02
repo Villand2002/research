@@ -38,7 +38,7 @@ class FenwickTree:
 def generate_mallows_permutation(reference: List[int], phi: float) -> List[int]:
     """
     Mallows modelに基づいて順列を生成 (高速化版)
-    Binary Indexed Tree を使用して O(n log n) を実現
+    Binary Indexed Tree を使用して O(n logn)
     """
     n = len(reference)
     
