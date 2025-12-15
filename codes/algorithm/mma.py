@@ -1,7 +1,8 @@
 import networkx as nx
 from typing import List, Tuple, Dict
 from codes.agent import Agents, Category
-import networkx as nx
+from codes.data_generation.dataset import Dataset
+from codes.outcome import Outcome
 
 class MMASolver:
     def __init__(self, agents, categories, capacities, priorities):
@@ -170,3 +171,11 @@ def execute_mma(agents_obj: Agents, categories_obj: List[Category]) -> List[Tupl
                 break
 
     return list(mu.items())
+
+
+def execute_mma_on_dataset(dataset: Dataset) -> Outcome:
+    """Run MMA using a Dataset and return an Outcome."""
+    agents_obj, categories_obj = dataset.to_algorithm_inputs()
+    matching = execute_mma(agents_obj, categories_obj)
+    matching_dict = {a: c for a, c in matching}
+    return Outcome(dataset_id=dataset.id, algorithm_name="MMA", matching=matching_dict)

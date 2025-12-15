@@ -1,5 +1,11 @@
+import networkx as nx
+from typing import List, Set
+
+from codes.agent import Agents, Category
+
+
 def compute_max_matching_size(agents_obj: Agents, categories_obj: List[Category], banned_agents: Set[int]):
-    """クラス構造に合わせた最大マッチング計算 (Max Flow)"""
+    """Max matching size helper used by REV."""
     G = nx.DiGraph()
     S, T = "S", "T"
     G.add_node(S)

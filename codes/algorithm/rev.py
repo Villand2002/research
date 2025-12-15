@@ -1,7 +1,10 @@
 import networkx as nx
 from typing import List, Tuple, Dict
 from codes.agent import Agents, Category
-from codes.graph_function.eligibility_graph import compute_max_matching_size, nx_rebuild_graph
+from codes.data_generation.dataset import Dataset
+from codes.outcome import Outcome
+from codes.graph_function.maximum_matching import compute_max_matching_size
+from codes.graph_function.flow_network import nx_rebuild_graph
 
 def rev_algorithm(agents_obj: Agents, categories_obj: List[Category]):
     """REV Algorithm implementation"""
@@ -25,7 +28,22 @@ def rev_algorithm(agents_obj: Agents, categories_obj: List[Category]):
     for ag in agents_list:
         if ag in flow_dict:
             for cat_id, flow in flow_dict[ag].items():
+                if cat_id == "T":
+                    continue
                 if flow > 0:
                     matching.append((ag, cat_id))
 
     return matching, banned
+
+
+def execute_rev_on_dataset(dataset: Dataset) -> Outcome:
+    """Run REV on a Dataset and return an Outcome."""
+    agents_obj, categories_obj = dataset.to_algorithm_inputs()
+    matching, _ = rev_algorithm(agents_obj, categories_obj)
+    matching_dict = {a: c for a, c in matching}
+    return Outcome(dataset_id=dataset.id, algorithm_name="REV", matching=matching_dict)
+
+
+# Alias for VEV naming in the notes
+def execute_vev_on_dataset(dataset: Dataset) -> Outcome:
+    return execute_rev_on_dataset(dataset)
