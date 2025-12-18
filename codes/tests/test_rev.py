@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+
 import pytest
 
 # プロジェクトルートをパスに追加
@@ -10,6 +11,7 @@ if str(ROOT) not in sys.path:
 
 from codes.agent import Agent, Agents, Category
 from codes.algorithm.rev import rev_algorithm
+
 
 class TestREVAlgorithm:
     @pytest.fixture

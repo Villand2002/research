@@ -1,8 +1,8 @@
 
-import numpy as np
-import pandas as pd
 from typing import List
 
+import numpy as np
+import pandas as pd
 from codes.data_generation.mallows import generate_mallows_permutation
 
 

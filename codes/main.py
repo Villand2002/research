@@ -1,9 +1,16 @@
 from agent import Agent, Agents, Category
-from codes.data_generation.mallows import generate_priorities, analyze_preferences, generate_capacities
-from codes.graph_function.eligibility_graph import assign_eligibility_random, assign_category_priorities
-from algorithm.mma import MMASolver,  execute_mma
+from algorithm.mma import MMASolver, execute_mma
 from algorithm.rev import rev_algorithm
 from algorithm.scu import SCUSolver
+from codes.data_generation.mallows import (
+    analyze_preferences,
+    generate_capacities,
+    generate_priorities,
+)
+from codes.graph_function.eligibility_graph import (
+    assign_category_priorities,
+    assign_eligibility_random,
+)
 
 if __name__ == "__main__":
     # --- パラメータ設定 ---

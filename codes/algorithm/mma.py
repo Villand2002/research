@@ -1,7 +1,10 @@
+from typing import Dict, List, Tuple
+
 import networkx as nx
-from typing import List, Tuple, Dict
+
 from codes.agent import Agents, Category, Outcome
 from codes.data_generation.dataset import Dataset
+
 
 class MMASolver:
     def __init__(self, agents, categories, capacities, priorities):

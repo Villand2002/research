@@ -1,12 +1,12 @@
 import sys
 from pathlib import Path
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.algorithm.mma import MMASolver
+
 
 class TestMMASolver:
     def test_example1_paper(self):

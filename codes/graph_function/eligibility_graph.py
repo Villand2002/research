@@ -1,10 +1,9 @@
-import networkx as nx
+from typing import List
+
 import numpy as np
-from typing import List, Set
 from codes.agent import Agents, Category
 from codes.data_generation.mallows import generate_mallows_permutation
-from codes.graph_function.maximum_matching import compute_max_matching_size
-from codes.graph_function.flow_network import nx_rebuild_graph
+
 
 def assign_eligibility_random(agents_obj: Agents, categories_obj: List[Category], p=0.4):
     """Agents と Category の構造に合わせて eligibility を設定"""

@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 
 import numpy as np
-
 from codes.agent import Agent, Agents, Category
 from codes.data_generation.mallows import generate_mallows_permutation
 
