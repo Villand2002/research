@@ -1,9 +1,22 @@
 
 import numpy as np
 import pandas as pd
-from typing import List, Dict, Tuple
-from scipy.stats import kendalltau
-from codes.data_generation.mallows import generate_mallows_permutation, kendall_distance
+from typing import List
+
+from codes.data_generation.mallows import generate_mallows_permutation
+
+
+def kendall_distance(perm1: List[int], perm2: List[int]) -> int:
+    """Compute Kendall distance between two permutations."""
+    n = len(perm1)
+    distance = 0
+    for i in range(n):
+        for j in range(i + 1, n):
+            idx1_i = perm1.index(perm2[i])
+            idx1_j = perm1.index(perm2[j])
+            if idx1_i > idx1_j:
+                distance += 1
+    return distance
 
 
 

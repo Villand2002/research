@@ -1,8 +1,7 @@
 import networkx as nx
 from typing import List, Tuple, Dict
-from codes.agent import Agents, Category
+from codes.agent import Agents, Category, Outcome
 from codes.data_generation.dataset import Dataset
-from codes.outcome import Outcome
 from codes.graph_function.maximum_matching import compute_max_matching_size
 from codes.graph_function.flow_network import nx_rebuild_graph
 
