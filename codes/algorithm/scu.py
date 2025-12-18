@@ -1,5 +1,4 @@
 import networkx as nx
-from codes.agent import Agents, Category
 
 
 class SCUSolver:

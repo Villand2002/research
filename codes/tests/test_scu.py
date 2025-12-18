@@ -1,15 +1,11 @@
 import sys
 from pathlib import Path
-import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.algorithm.scu import SCUSolver
-from codes.agent import Agent, Agents, Category
-from codes.data_generation.generate_data import generate_priorities, generate_capacities
-from codes.graph_function.eligibility_graph import compute_max_matching_size
 
 class TestSCUSolver:
     def test_example4_paper(self):

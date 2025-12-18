@@ -1,8 +1,7 @@
 import pandas as pd
 import numpy as np
 from typing import List, Tuple
-from scipy.stats import kendalltau
-from typing import List, Dict, Tuple
+from typing import Dict
 import networkx as nx
 
 
@@ -196,7 +195,6 @@ def analyze_preferences(preferences_df: pd.DataFrame) -> dict:
 
 # REVアルゴリズム
 
-import networkx as nx
 
 def assign_eligibility_random(agents_obj: Agents, categories_obj: List[Category], p=0.4):
     """
@@ -420,7 +418,7 @@ if __name__ == "__main__":
     
     # 統計情報
     stats = analyze_preferences(preferences)
-    print(f"\n統計情報:")
+    print("\n統計情報:")
     print(f"- エージェント数: {stats['n_agents']}")
     print(f"- カテゴリ数: {stats['n_categories']}")
     print(f"- 平均Kendall距離: {stats['avg_kendall_distance']:.2f}")
