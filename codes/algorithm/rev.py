@@ -38,7 +38,7 @@ def rev_algorithm(
     agents_list: List[Any] = [ag.agent_id for ag in agents_obj.agents]
     
     # カテゴリIDの集合
-    cat_ids: Set[Any] = {cat.category_id for cat in categories_obj}
+    {cat.category_id for cat in categories_obj}
     
     # ベースライン順序 π の設定（指定がない場合はagents_listをそのまま使用）
     if baseline_order is None:
