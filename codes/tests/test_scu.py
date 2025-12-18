@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
 
 from codes.algorithm.scu import SCUSolver
 
+
 class TestSCUSolver:
     def test_example4_paper(self):
         """

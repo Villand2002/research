@@ -1,7 +1,6 @@
 import time
 
 import pytest
-
 from codes.algorithm.mma import execute_mma_on_dataset
 from codes.data_generation.dataset import Dataset
 

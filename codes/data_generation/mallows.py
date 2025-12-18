@@ -1,5 +1,7 @@
-import numpy as np
 from typing import List
+
+import numpy as np
+
 
 # --- 改善された関数 ---
 def generate_mallows_permutation(reference: List[int], phi: float) -> List[int]:

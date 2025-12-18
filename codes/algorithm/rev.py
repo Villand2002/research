@@ -1,9 +1,12 @@
-import networkx as nx
 from typing import List
+
+import networkx as nx
+
 from codes.agent import Agents, Category, Outcome
 from codes.data_generation.dataset import Dataset
-from codes.graph_function.maximum_matching import compute_max_matching_size
 from codes.graph_function.flow_network import nx_rebuild_graph
+from codes.graph_function.maximum_matching import compute_max_matching_size
+
 
 def rev_algorithm(agents_obj: Agents, categories_obj: List[Category]):
     """REV Algorithm implementation"""

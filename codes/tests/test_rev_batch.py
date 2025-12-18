@@ -1,7 +1,6 @@
 import time
 
 import pytest
-
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.data_generation.dataset import Dataset
 

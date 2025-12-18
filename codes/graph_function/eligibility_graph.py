@@ -1,7 +1,9 @@
-import numpy as np
 from typing import List
+
+import numpy as np
 from codes.agent import Agents, Category
 from codes.data_generation.mallows import generate_mallows_permutation
+
 
 def assign_eligibility_random(agents_obj: Agents, categories_obj: List[Category], p=0.4):
     """Agents と Category の構造に合わせて eligibility を設定"""

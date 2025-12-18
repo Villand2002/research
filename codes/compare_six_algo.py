@@ -1,8 +1,8 @@
-import pandas as pd
-import numpy as np
-from typing import List, Tuple
-from typing import Dict
+from typing import Dict, List, Tuple
+
 import networkx as nx
+import numpy as np
+import pandas as pd
 
 
 class Agent:

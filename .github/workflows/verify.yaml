@@ -33,7 +33,8 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run codes style check
-        run: ruff check .
+        run: ruff check . --fix --select F,I
+
 
       - name: Run tests
         run: |

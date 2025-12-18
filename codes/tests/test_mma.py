@@ -7,6 +7,7 @@ if str(ROOT) not in sys.path:
 
 from codes.algorithm.mma import MMASolver
 
+
 class TestMMASolver:
     def test_example1_paper(self):
         """

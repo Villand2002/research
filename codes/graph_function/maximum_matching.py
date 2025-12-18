@@ -1,6 +1,6 @@
-import networkx as nx
 from typing import List, Set
 
+import networkx as nx
 from codes.agent import Agents, Category
 
 

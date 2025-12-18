@@ -1,7 +1,6 @@
 import time
 
 import pytest
-
 from codes.algorithm.scu import SCUSolver
 from codes.data_generation.dataset import Dataset
 
