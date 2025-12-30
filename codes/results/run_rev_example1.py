@@ -14,7 +14,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.agent import Agent, Agents, Category
-from codes.algorithm.rev import rev_algorithm
+from codes.algorithm.rev import rev_algorithm_flow_network
 
 
 def build_example1():
@@ -35,7 +35,7 @@ def build_example1():
 
 def main() -> None:
     agents_obj, categories_obj = build_example1()
-    matching, banned = rev_algorithm(agents_obj, categories_obj)
+    matching, banned = rev_algorithm_flow_network(agents_obj, categories_obj)
     matching_dict = {agent_id: category_id for agent_id, category_id in matching}
 
     result_dir = ROOT / "result _csv"

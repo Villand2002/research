@@ -1,6 +1,6 @@
 from agent import Agent, Agents, Category
 from algorithm.mma import MMASolver, execute_mma
-from algorithm.rev import rev_algorithm
+from algorithm.rev import rev_algorithm_flow_network
 from algorithm.scu import SCUSolver
 from codes.data_generation.mallows import (
     analyze_preferences,
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # --- アルゴリズム実行: REV ---
     print("\nRunning REV Algorithm...")
-    matching, rejected = rev_algorithm(agents_obj, categories_obj)
+    matching, rejected = rev_algorithm_flow_network(agents_obj, categories_obj)
     print(f"Rejected agents: {rejected}")
     print("Matching result (Top 5):")
     for a, c in matching[:5]:

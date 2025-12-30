@@ -10,7 +10,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.agent import Agent, Agents, Category
-from codes.algorithm.rev import rev_algorithm
+from codes.algorithm.rev import rev_algorithm_flow_network
 
 
 class TestREVAlgorithm:
@@ -54,7 +54,7 @@ class TestREVAlgorithm:
         agents_obj, categories_obj = setup_example1_objects
 
         # アルゴリズム実行
-        matching, banned = rev_algorithm(agents_obj, categories_obj)
+        matching, banned = rev_algorithm_flow_network(agents_obj, categories_obj)
 
         # --- 検証 ---
         
