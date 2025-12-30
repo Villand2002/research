@@ -4,13 +4,13 @@ from codes.agent import Agents, Category, Outcome
 from codes.data_generation.dataset import Dataset
 
 
-def rev_algorithm(
+def rev_algorithm_flow_network(
     agents_obj: Agents, 
     categories_obj: List[Category], 
     baseline_order: Optional[List[Any]] = None
 ) -> Tuple[List[Tuple[Any, Any]], Set[Any]]:
     """
-    Reverse Rejecting (REV) Rule の実装
+    Reverse Rejecting (REV) Rule の実装 (flow network)
     
     論文: Algorithm 2 (p.6)
     
@@ -37,8 +37,8 @@ def rev_algorithm(
     # エージェントIDのリストを取得
     agents_list: List[Any] = [ag.agent_id for ag in agents_obj.agents]
     
-    # カテゴリIDの集合
-    {cat.category_id for cat in categories_obj}
+    # カテゴリIDの集合 (デバッグや検証用途)
+    # category_ids = {cat.category_id for cat in categories_obj}
     
     # ベースライン順序 π の設定（指定がない場合はagents_listをそのまま使用）
     if baseline_order is None:
@@ -232,14 +232,169 @@ def rev_algorithm(
     return matching, rejected
 
 
+def rev_algorithm_bipartite(
+    agents_obj: Agents,
+    categories_obj: List[Category],
+    baseline_order: Optional[List[Any]] = None
+) -> Tuple[List[Tuple[Any, Any]], Set[Any]]:
+    """
+    Reverse Rejecting (REV) Rule の実装 (bipartite graph)
+
+    論文: Algorithm 2 (p.6)
+    """
+    agents_list: List[Any] = [ag.agent_id for ag in agents_obj.agents]
+
+    if baseline_order is None:
+        baseline_order = agents_list.copy()
+
+    def is_eligible(agent_id: Any, category: Category) -> bool:
+        return agent_id in category.eligible_agents
+
+    def has_higher_priority(agent_i: Any, agent_j: Any, category: Category) -> bool:
+        if agent_i not in category.priority or agent_j not in category.priority:
+            return False
+        idx_i = category.priority.index(agent_i)
+        idx_j = category.priority.index(agent_j)
+        return idx_i < idx_j
+
+    def build_bipartite_graph(
+        rejected_agents: Set[Any],
+        current_agent_i: Optional[Any] = None,
+        removed_edges_from_banned: Optional[Dict[Any, Set[Any]]] = None
+    ) -> Tuple[nx.Graph, List[Tuple[str, Any]]]:
+        if removed_edges_from_banned is None:
+            removed_edges_from_banned = {}
+
+        B = nx.Graph()
+        left_nodes: List[Tuple[str, Any]] = []
+
+        active_agents: List[Any] = [
+            aid for aid in agents_list
+            if aid not in rejected_agents and aid != current_agent_i
+        ]
+
+        for aid in active_agents:
+            node = ("agent", aid)
+            B.add_node(node, bipartite=0)
+            left_nodes.append(node)
+
+        for cat in categories_obj:
+            for slot_idx in range(cat.capacity):
+                slot_node = ("slot", cat.category_id, slot_idx)
+                B.add_node(slot_node, bipartite=1)
+
+        for cat in categories_obj:
+            cid = cat.category_id
+            for agent_j in cat.eligible_agents:
+                if agent_j in rejected_agents or agent_j == current_agent_i:
+                    continue
+                if cid in removed_edges_from_banned and agent_j in removed_edges_from_banned[cid]:
+                    continue
+                if current_agent_i is not None and is_eligible(current_agent_i, cat):
+                    if has_higher_priority(current_agent_i, agent_j, cat):
+                        continue
+                agent_node = ("agent", agent_j)
+                if agent_node not in B:
+                    continue
+                for slot_idx in range(cat.capacity):
+                    B.add_edge(agent_node, ("slot", cid, slot_idx))
+
+        return B, left_nodes
+
+    def get_max_matching_size(
+        rejected_agents: Set[Any],
+        current_agent_i: Optional[Any] = None,
+        removed_edges_from_banned: Optional[Dict[Any, Set[Any]]] = None
+    ) -> int:
+        B, left_nodes = build_bipartite_graph(
+            rejected_agents=rejected_agents,
+            current_agent_i=current_agent_i,
+            removed_edges_from_banned=removed_edges_from_banned,
+        )
+        if not left_nodes:
+            return 0
+        matching = nx.algorithms.bipartite.maximum_matching(B, top_nodes=left_nodes)
+        return sum(1 for node in left_nodes if node in matching)
+
+    def compute_final_matching(
+        rejected_agents: Set[Any],
+        removed_edges: Dict[Any, Set[Any]]
+    ) -> List[Tuple[Any, Any]]:
+        B, left_nodes = build_bipartite_graph(
+            rejected_agents=rejected_agents,
+            current_agent_i=None,
+            removed_edges_from_banned=removed_edges,
+        )
+        if not left_nodes:
+            return []
+        matching = nx.algorithms.bipartite.maximum_matching(B, top_nodes=left_nodes)
+        results: List[Tuple[Any, Any]] = []
+        for node in left_nodes:
+            partner = matching.get(node)
+            if not partner or partner[0] != "slot":
+                continue
+            _, cid, _ = partner
+            results.append((node[1], cid))
+        return results
+
+    base_m: int = get_max_matching_size(rejected_agents=set())
+    rejected: Set[Any] = set()
+    removed_edges: Dict[Any, Set[Any]] = {}
+
+    for agent_i in reversed(baseline_order):
+        matching_size = get_max_matching_size(
+            rejected_agents=rejected,
+            current_agent_i=agent_i,
+            removed_edges_from_banned=removed_edges
+        )
+
+        if matching_size == base_m:
+            rejected.add(agent_i)
+            for cat in categories_obj:
+                cid = cat.category_id
+                if is_eligible(agent_i, cat):
+                    for agent_j in cat.eligible_agents:
+                        if agent_j != agent_i and has_higher_priority(agent_i, agent_j, cat):
+                            if cid not in removed_edges:
+                                removed_edges[cid] = set()
+                            removed_edges[cid].add(agent_j)
+
+    matching = compute_final_matching(rejected, removed_edges)
+    return matching, rejected
+
+
+def rev_algorithm(
+    agents_obj: Agents,
+    categories_obj: List[Category],
+    baseline_order: Optional[List[Any]] = None
+) -> Tuple[List[Tuple[Any, Any]], Set[Any]]:
+    """
+    Backward-compatible wrapper for the flow-network implementation.
+    """
+    return rev_algorithm_flow_network(agents_obj, categories_obj, baseline_order)
+
+
 def execute_rev_on_dataset(dataset: Dataset) -> Outcome:
     """
     データセットに対してREVアルゴリズムを実行するエントリポイント
     """
     agents_obj, categories_obj = dataset.to_algorithm_inputs()
-    matching, _ = rev_algorithm(agents_obj, categories_obj)
+    matching, _ = rev_algorithm_flow_network(agents_obj, categories_obj)
     return Outcome(
         dataset_id=dataset.id,
-        algorithm_name="REV",
+        algorithm_name="REV with flow_network",
+        matching={agent: cat for agent, cat in matching}
+    )
+
+
+def execute_rev_on_dataset_bipartite(dataset: Dataset) -> Outcome:
+    """
+    データセットに対してREVアルゴリズム (bipartite graph) を実行するエントリポイント
+    """
+    agents_obj, categories_obj = dataset.to_algorithm_inputs()
+    matching, _ = rev_algorithm_bipartite(agents_obj, categories_obj)
+    return Outcome(
+        dataset_id=dataset.id,
+        algorithm_name="REV with bipartite_graph",
         matching={agent: cat for agent, cat in matching}
     )
