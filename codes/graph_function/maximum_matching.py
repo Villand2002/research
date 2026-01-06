@@ -11,7 +11,7 @@ def compute_max_matching_size(
     target_ag_id: int = None
 ):
     """
-    論文の G^i (修正適格グラフ) を構築し、最大流を計算する内部関数 
+    論文の G^i (修正適格グラフ) を構築し、最大流を計算する関数 
     """
     G = nx.DiGraph()
     S, T = "S", "T"
