@@ -89,8 +89,10 @@ class Outcome:
 
     def verify_fairness(self, dataset: "Dataset") -> Tuple[bool, int]:
         """
-        Check justified envy: no agent prefers another agent's assigned category
-        while holding higher priority for that category.
+        Check fairness (justified envy):
+        - matched agents are treated as non-envious.
+        - for each unmatched agent i and each eligible category c,
+          ensure there is no matched agent j with lower priority than i in c.
         Returns (is_fair, envy_count).
         """
         if dataset is None:
@@ -102,12 +104,18 @@ class Outcome:
 
         for agent in dataset.agents:
             assigned_cat = self.matching.get(agent.agent_id)
+            # 割り当てられてないエージェントだけ考慮する
+            if assigned_cat is not None:
+                continue
             for cat_id in agent.acceptable_categories:
-                if cat_id == assigned_cat:
-                    break
+                
+                category = dataset.get_category(cat_id)
+                if agent.agent_id not in category.eligible_agents:
+                    continue
                 if agent.agent_id not in priority_rank.get(cat_id, {}):
                     continue
                 for other_agent in allocations.get(cat_id, []):
+                    # priorityが低いのに割り当てられているかの確認
                     if priority_rank[cat_id].get(agent.agent_id, float("inf")) < priority_rank[cat_id].get(other_agent, float("inf")):
                         envy_count += 1
                         break
