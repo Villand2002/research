@@ -30,7 +30,7 @@ from codes.batch_shared import (
 from codes.data_generation.dataset import Dataset
 
 
-def _run_mma(datasets: List[Dataset]) -> float:
+def _run_mma(datasets: List[Dataset], progress_every: int = 100) -> float:
     start = time.perf_counter()
     for idx, dataset in enumerate(datasets):
         outcome = execute_mma_on_dataset(dataset)
@@ -39,10 +39,12 @@ def _run_mma(datasets: List[Dataset]) -> float:
             raise AssertionError(
                 f"MMA produced infeasible matching on dataset {idx}: {violations} violations"
             )
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[MMA] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
 
-def _run_rev(datasets: List[Dataset]) -> float:
+def _run_rev(datasets: List[Dataset], progress_every: int = 100) -> float:
     start = time.perf_counter()
     for idx, dataset in enumerate(datasets):
         outcome = execute_rev_on_dataset(dataset)
@@ -51,10 +53,12 @@ def _run_rev(datasets: List[Dataset]) -> float:
             raise AssertionError(
                 f"REV produced infeasible matching on dataset {idx}: {violations} violations"
             )
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[REV] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
 
-def _run_rev_bipartite(datasets: List[Dataset]) -> float:
+def _run_rev_bipartite(datasets: List[Dataset], progress_every: int = 100) -> float:
     start = time.perf_counter()
     for idx, dataset in enumerate(datasets):
         outcome = execute_rev_bipartite_on_dataset(dataset)
@@ -64,12 +68,14 @@ def _run_rev_bipartite(datasets: List[Dataset]) -> float:
                 "REV (bipartite) produced infeasible matching on dataset "
                 f"{idx}: {violations} violations"
             )
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[REV (bipartite)] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
 
-def _run_scu(datasets: List[Dataset]) -> float:
+def _run_scu(datasets: List[Dataset], progress_every: int = 100) -> float:
     start = time.perf_counter()
-    for dataset in datasets:
+    for idx, dataset in enumerate(datasets):
         agents, categories, capacities, priorities, precedence, beneficial = (
             build_scu_inputs_from_dataset(dataset)
         )
@@ -93,6 +99,8 @@ def _run_scu(datasets: List[Dataset]) -> float:
             for ag in assigned:
                 if ag not in priorities[cat]:
                     raise AssertionError(f"{ag} not eligible for {cat}")
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[SCU] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
 
