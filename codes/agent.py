@@ -104,6 +104,7 @@ class Outcome:
 
         for agent in dataset.agents:
             assigned_cat = self.matching.get(agent.agent_id)
+            # 割り当てられてないエージェントだけ考慮する
             if assigned_cat is not None:
                 continue
             for cat_id in agent.acceptable_categories:

@@ -18,3 +18,8 @@ find results -name "*.py" -exec python {} \;
 ```
 
 で全部実行
+
+### makefileによる実行例
+```bash
+make batch-compare SIZES="50 100 1000" COUNT=100
+```

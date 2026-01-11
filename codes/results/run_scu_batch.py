@@ -16,39 +16,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.algorithm.scu import SCUSolver
-from codes.data_generation.dataset import Dataset
-
-
-def _build_scu_inputs(seed: int):
-    dataset = Dataset.build(
-        dataset_id=seed,
-        num_agents=30,
-        num_categories=8,
-        capacity_ratio=1.0,
-        capacity_std=0.1,
-        eligibility_prob=0.6,
-        priority_phi=0.85,
-        preference_phi=0.75,
-        max_preference_length=6,
-        seed=seed,
-    )
-    agents = [f"i{ag.agent_id}" for ag in dataset.agents]
-    categories = [f"c{cat.category_id}" for cat in dataset.categories]
-    capacities = {f"c{cat.category_id}": cat.capacity for cat in dataset.categories}
-    priorities = {
-        f"c{cat.category_id}": [f"i{aid}" for aid in cat.priority] for cat in dataset.categories
-    }
-    precedence = categories[:]
-    beneficial_cutoff = max(1, len(categories) // 2)
-    beneficial = categories[:beneficial_cutoff]
-    return agents, categories, capacities, priorities, precedence, beneficial
+from codes.batch_shared import build_batch_dataset, build_scu_inputs_from_dataset
 
 
 def main() -> None:
     start = time.perf_counter()
     for idx in range(100):
-        agents, categories, capacities, priorities, precedence, beneficial = _build_scu_inputs(
-            2000 + idx
+        dataset = build_batch_dataset(idx)
+        agents, categories, capacities, priorities, precedence, beneficial = (
+            build_scu_inputs_from_dataset(dataset)
         )
         solver = SCUSolver(
             agents,
