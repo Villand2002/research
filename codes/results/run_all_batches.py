@@ -20,6 +20,7 @@ from codes.algorithm.mma import execute_mma_on_dataset
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
+from codes.algorithm.scu_comb import SCUcomb
 from codes.batch_shared import BATCH_DATASET_SEEDS, build_batch_dataset, build_scu_inputs_from_dataset
 from codes.data_generation.dataset import Dataset
 
@@ -90,6 +91,35 @@ def _run_scu(datasets: List[Dataset]) -> float:
     return time.perf_counter() - start
 
 
+def _run_scu_comb(datasets: List[Dataset]) -> float:
+    start = time.perf_counter()
+    for dataset in datasets:
+        agents, categories, capacities, priorities, precedence, beneficial = (
+            build_scu_inputs_from_dataset(dataset)
+        )
+        solver = SCUcomb(
+            agents,
+            categories,
+            capacities,
+            priorities,
+            precedence,
+            beneficial,
+        )
+        matching = solver.solve()
+        if len(matching) > sum(capacities.values()):
+            raise AssertionError("SCUcomb matching exceeded total capacity")
+        if len(matching) != len(set(matching.keys())):
+            raise AssertionError("SCUcomb assigned an agent more than once")
+        for cat in categories:
+            assigned = [ag for ag, c in matching.items() if c == cat]
+            if len(assigned) > capacities[cat]:
+                raise AssertionError(f"Category {cat} exceeded capacity")
+            for ag in assigned:
+                if ag not in priorities[cat]:
+                    raise AssertionError(f"{ag} not eligible for {cat}")
+    return time.perf_counter() - start
+
+
 def main() -> None:
     datasets = [build_batch_dataset(seed) for seed in BATCH_DATASET_SEEDS]
 
@@ -98,6 +128,7 @@ def main() -> None:
         "REV": _run_rev(datasets),
         "REV (bipartite)": _run_rev_bipartite(datasets),
         "SCU": _run_scu(datasets),
+        "SCUcomb": _run_scu_comb(datasets),
     }
 
     result_dir = ROOT / "result _csv"

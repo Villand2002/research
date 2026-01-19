@@ -23,3 +23,4 @@ find results -name "*.py" -exec python {} \;
 ```bash
 make batch-compare SIZES="50 100 1000" COUNT=100
 ```
+で全部のアルゴリズムに関して実行できる

@@ -21,6 +21,7 @@ from codes.algorithm.mma import execute_mma_on_dataset
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
+from codes.algorithm.scu_comb import SCUcomb
 from codes.batch_shared import (
     BATCH_DATASET_SEEDS,
     BatchDatasetConfig,
@@ -104,6 +105,37 @@ def _run_scu(datasets: List[Dataset], progress_every: int = 100) -> float:
     return time.perf_counter() - start
 
 
+def _run_scu_comb(datasets: List[Dataset], progress_every: int = 100) -> float:
+    start = time.perf_counter()
+    for idx, dataset in enumerate(datasets):
+        agents, categories, capacities, priorities, precedence, beneficial = (
+            build_scu_inputs_from_dataset(dataset)
+        )
+        solver = SCUcomb(
+            agents,
+            categories,
+            capacities,
+            priorities,
+            precedence,
+            beneficial,
+        )
+        matching = solver.solve()
+        if len(matching) > sum(capacities.values()):
+            raise AssertionError("SCUcomb matching exceeded total capacity")
+        if len(matching) != len(set(matching.keys())):
+            raise AssertionError("SCUcomb assigned an agent more than once")
+        for cat in categories:
+            assigned = [ag for ag, c in matching.items() if c == cat]
+            if len(assigned) > capacities[cat]:
+                raise AssertionError(f"Category {cat} exceeded capacity")
+            for ag in assigned:
+                if ag not in priorities[cat]:
+                    raise AssertionError(f"{ag} not eligible for {cat}")
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[SCUcomb] processed {idx + 1}/{len(datasets)}")
+    return time.perf_counter() - start
+
+
 def _build_datasets(num_agents: int, count: int) -> List[Dataset]:
     config = BatchDatasetConfig(num_agents=num_agents)
     seeds = BATCH_DATASET_SEEDS[:count]
@@ -153,6 +185,7 @@ def main() -> None:
             "REV": _run_rev(datasets),
             "REV (bipartite)": _run_rev_bipartite(datasets),
             "SCU": _run_scu(datasets),
+            "SCUcomb": _run_scu_comb(datasets),
         }
         _write_results(num_agents, args.count, durations)
         for name, value in durations.items():
