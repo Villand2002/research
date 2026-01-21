@@ -128,11 +128,6 @@ class SCUcomb(SCUSolver):  # SCU solver with compact flow network
             return False  # cannot assign
 
         G, S, T = self._build_compact_graph(c0_capacity=self._non_beneficial_capacity)  # base graph
-        lower_bounds: Dict[Tuple[Any, Any], int] = {  # set required totals
-            ("C_star", T): b,
-            ("C_zero", T): m - b,
-        }
-
         assigned_by_group: Dict[Any, int] = {}  # group -> assigned count
         assigned_by_category: Dict[Any, int] = {}  # category -> assigned count
         for (g_id, c_id), count in assigned_counts.items():  # apply upper-bound reductions
@@ -155,6 +150,21 @@ class SCUcomb(SCUSolver):  # SCU solver with compact flow network
             if G.has_edge(c_id, target):
                 G[c_id][target]["capacity"] = max(0, G[c_id][target]["capacity"] - count)
 
+        assigned_beneficial = sum(
+            count for c_id, count in assigned_by_category.items() if c_id in self.beneficial_ids
+        )
+        assigned_non_beneficial = sum(
+            count for c_id, count in assigned_by_category.items() if c_id not in self.beneficial_ids
+        )
+        remaining_beneficial = b - assigned_beneficial
+        remaining_non_beneficial = (m - b) - assigned_non_beneficial
+        if remaining_beneficial < 0 or remaining_non_beneficial < 0:
+            return False
+
+        lower_bounds: Dict[Tuple[Any, Any], int] = {  # set required remaining totals
+            ("C_star", T): remaining_beneficial,
+            ("C_zero", T): remaining_non_beneficial,
+        }
         lower_bounds[(group_id, cat_id)] = lower_bounds.get((group_id, cat_id), 0) + 1  # try assign
         return self._has_feasible_flow(G, lower_bounds, S, T)  # check feasibility
 
