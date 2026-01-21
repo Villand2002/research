@@ -246,6 +246,8 @@ class SCUcomb(SCUSolver):  # SCU solver with compact flow network
 
         residual = nx.DiGraph()  # residual graph for extra flow
         for u, v, data in H.edges(data=True):  # build residual edges
+            if u == sink and v == source:  # drop circulation edge for max-flow phase
+                continue
             capacity = data["capacity"]  # edge capacity
             used = flow_dict.get(u, {}).get(v, 0)  # used flow
             remaining = capacity - used  # remaining capacity
