@@ -2,12 +2,12 @@ import time
 
 import pytest
 
-from codes.algorithm.scu import SCUSolver
+from codes.algorithm.scu_comb import SCUcomb
 from codes.batch_shared import BATCH_DATASET_SEEDS, build_batch_dataset, build_scu_inputs_from_dataset
 
 
 @pytest.mark.slow
-def test_scu_random_batch():
+def test_scu_comb_random_batch():
     count = len(BATCH_DATASET_SEEDS)
     start = time.perf_counter()
     for seed in BATCH_DATASET_SEEDS:
@@ -15,7 +15,7 @@ def test_scu_random_batch():
         agents, categories, capacities, priorities, precedence, beneficial = (
             build_scu_inputs_from_dataset(dataset)
         )
-        solver = SCUSolver(
+        solver = SCUcomb(
             agents,
             categories,
             capacities,
@@ -25,7 +25,6 @@ def test_scu_random_batch():
         )
         matching = solver.solve()
         assert len(matching) <= sum(capacities.values())
-        # No agent assigned twice and all assignments respect capacity/priority membership
         assert len(matching) == len(set(matching.keys()))
         for cat in categories:
             assigned = [ag for ag, c in matching.items() if c == cat]
@@ -33,4 +32,4 @@ def test_scu_random_batch():
             for ag in assigned:
                 assert ag in priorities[cat], f"{ag} not eligible for {cat}"
     duration = time.perf_counter() - start
-    print(f"[SCU] random batch of {count} datasets completed in {duration:.2f}s")
+    print(f"[SCUcomb] random batch of {count} datasets completed in {duration:.2f}s")

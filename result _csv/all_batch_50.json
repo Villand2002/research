@@ -1,0 +1,11 @@
+{
+  "num_agents": 50,
+  "count": 100,
+  "duration_seconds": {
+    "MMA": 0.0892,
+    "REV": 7.8126,
+    "REV (bipartite)": 3.9902,
+    "SCU": 10.0235,
+    "SCUcomb": 2.0331
+  }
+}

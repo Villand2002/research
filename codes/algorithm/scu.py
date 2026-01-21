@@ -2,8 +2,12 @@ import networkx as nx
 from typing import List, Set, Dict
 
 class SCUSolver:
-    # 引数をテストコード(tests/test_scu.py:38)に合わせる
+    # 引数をテストコード(tests/test_scu.py:38)と同じに
     def __init__(self, agents, categories, capacities, priorities, precedence, beneficial):
+        """
+        Store SCU instance data: agents/categories, capacities, priorities, precedence,
+        and the set of beneficial categories.
+        """
         self.agent_ids = agents
         self.category_ids = categories
         self.capacities = capacities  # Dict[id, cap]
@@ -12,6 +16,10 @@ class SCUSolver:
         self.beneficial_ids = set(beneficial)
 
     def solve(self) -> Dict[any, any]:
+        """
+        Compute the SCU matching by iterating categories in precedence order and
+        assigning agents when feasibility can be preserved.
+        """
         # ステップ1 & 2: m (最大基数) と b (最大受益者数) を計算 [cite: 531-534]
         b = self._compute_max_beneficial()
         m = self._compute_max_cardinality(b)
@@ -35,6 +43,10 @@ class SCUSolver:
         return X
 
     def _can_assign(self, current_ag, current_cat, X, b, m):
+        """
+        Check whether assigning (current_ag -> current_cat) can still achieve
+        total matching size m with b beneficial matches via a flow test.
+        """
         G = nx.DiGraph()
         S, T = "source", "sink"
         C_beneficial, C_open = "C_star", "C_zero"
@@ -66,6 +78,10 @@ class SCUSolver:
             return False
 
     def _compute_max_beneficial(self):
+        """
+        Compute the maximum number of matches that can be assigned to
+        beneficial categories.
+        """
         G = nx.DiGraph()
         S, T = "source", "sink"
         for ag_id in self.agent_ids:
@@ -79,6 +95,9 @@ class SCUSolver:
         return val
 
     def _compute_max_cardinality(self, b):
+        """
+        Compute the maximum total matching size (cardinality).
+        """
         G = nx.DiGraph()
         S, T = "source", "sink"
         for ag_id in self.agent_ids:
