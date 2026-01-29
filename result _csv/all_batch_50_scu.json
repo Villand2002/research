@@ -1,0 +1,6 @@
+{
+  "num_agents": 50,
+  "count": 100,
+  "algorithm": "SCU",
+  "duration_seconds": 10.0248
+}

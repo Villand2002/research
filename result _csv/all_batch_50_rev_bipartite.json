@@ -1,0 +1,6 @@
+{
+  "num_agents": 50,
+  "count": 100,
+  "algorithm": "REV (bipartite)",
+  "duration_seconds": 3.994
+}
