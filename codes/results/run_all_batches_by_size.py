@@ -3,7 +3,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, Iterable, List, Tuple
 
 
 def _find_repo_root(start: Path) -> Path:
@@ -142,18 +142,44 @@ def _build_datasets(num_agents: int, count: int) -> List[Dataset]:
     return [build_batch_dataset(seed, config) for seed in seeds]
 
 
-def _write_results(num_agents: int, count: int, durations: Dict[str, float]) -> None:
+def _write_results(
+    num_agents: int,
+    count: int,
+    algorithm_name: str,
+    algorithm_key: str,
+    duration: float,
+) -> None:
     result_dir = ROOT / "result _csv"
     result_dir.mkdir(parents=True, exist_ok=True)
-    output_path = result_dir / f"all_batch_{num_agents}.json"
+    output_path = result_dir / f"all_batch_{num_agents}_{algorithm_key}.json"
 
     payload = {
         "num_agents": num_agents,
         "count": count,
-        "duration_seconds": {name: round(value, 4) for name, value in durations.items()},
+        "algorithm": algorithm_name,
+        "duration_seconds": round(duration, 4),
     }
     output_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
     print(f"Wrote {output_path}")
+
+
+def _available_algorithms() -> List[Tuple[str, str]]:
+    return [
+        ("MMA", "mma"),
+        ("REV", "rev"),
+        ("REV (bipartite)", "rev_bipartite"),
+        ("SCU", "scu"),
+        ("SCUcomb", "scucomb"),
+    ]
+
+
+def _normalize_algorithms(values: Iterable[str]) -> List[str]:
+    if not values:
+        return [key for _, key in _available_algorithms()]
+    normalized = []
+    for value in values:
+        normalized.append(value.strip().lower())
+    return normalized
 
 
 def main() -> None:
@@ -171,6 +197,15 @@ def main() -> None:
         default=len(BATCH_DATASET_SEEDS),
         help="Number of datasets to generate per size.",
     )
+    parser.add_argument(
+        "--algorithms",
+        nargs="+",
+        default=[],
+        help=(
+            "Algorithms to run. Choices: mma, rev, rev_bipartite, scu, scucomb. "
+            "Default: all."
+        ),
+    )
     args = parser.parse_args()
 
     if args.count <= 0:
@@ -178,20 +213,33 @@ def main() -> None:
     if args.count > len(BATCH_DATASET_SEEDS):
         raise ValueError(f"--count must be <= {len(BATCH_DATASET_SEEDS)}")
 
+    algo_keys = _normalize_algorithms(args.algorithms)
+    available = {key for _, key in _available_algorithms()}
+    unknown = sorted(set(algo_keys) - available)
+    if unknown:
+        raise ValueError(f"Unknown algorithms: {', '.join(unknown)}")
+
     for num_agents in args.sizes:
         datasets = _build_datasets(num_agents, args.count)
-        durations: Dict[str, float] = {
-            "MMA": _run_mma(datasets),
-            "REV": _run_rev(datasets),
-            "REV (bipartite)": _run_rev_bipartite(datasets),
-            "SCU": _run_scu(datasets),
-            "SCUcomb": _run_scu_comb(datasets),
-        }
-        _write_results(num_agents, args.count, durations)
-        for name, value in durations.items():
+        for name, key in _available_algorithms():
+            if key not in algo_keys:
+                continue
+            if key == "mma":
+                duration = _run_mma(datasets)
+            elif key == "rev":
+                duration = _run_rev(datasets)
+            elif key == "rev_bipartite":
+                duration = _run_rev_bipartite(datasets)
+            elif key == "scu":
+                duration = _run_scu(datasets)
+            elif key == "scucomb":
+                duration = _run_scu_comb(datasets)
+            else:
+                raise AssertionError(f"Unhandled algorithm key: {key}")
+            _write_results(num_agents, args.count, name, key, duration)
             print(
                 f"[{name}] size={num_agents} batch of {len(datasets)} datasets "
-                f"completed in {value:.2f}s"
+                f"completed in {duration:.2f}s"
             )
 
 
