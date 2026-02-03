@@ -76,6 +76,15 @@ class Dataset:
         mean = total_capacity / float(num_categories)
         std = mean * std_ratio
 
+        if std_ratio <= 0:
+            # Uniform capacities (as even as possible) when std is disabled.
+            base = int(total_capacity // num_categories)
+            remainder = int(total_capacity - base * num_categories)
+            caps = [base] * num_categories
+            for i in range(remainder):
+                caps[i] += 1
+            return caps
+
         caps = np.random.normal(loc=mean, scale=std, size=num_categories)
         caps = np.maximum(caps, 1).astype(int)
 
