@@ -1,0 +1,6 @@
+{
+  "num_agents": 1000,
+  "count": 100,
+  "algorithm": "MMA",
+  "duration_seconds": 62.1426
+}

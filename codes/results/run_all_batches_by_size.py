@@ -136,8 +136,17 @@ def _run_scu_comb(datasets: List[Dataset], progress_every: int = 100) -> float:
     return time.perf_counter() - start
 
 
-def _build_datasets(num_agents: int, count: int) -> List[Dataset]:
-    config = BatchDatasetConfig(num_agents=num_agents)
+def _build_datasets(
+    num_agents: int,
+    count: int,
+    priority_phi: float,
+    preference_phi: float,
+) -> List[Dataset]:
+    config = BatchDatasetConfig(
+        num_agents=num_agents,
+        priority_phi=priority_phi,
+        preference_phi=preference_phi,
+    )
     seeds = BATCH_DATASET_SEEDS[:count]
     return [build_batch_dataset(seed, config) for seed in seeds]
 
@@ -206,12 +215,28 @@ def main() -> None:
             "Default: all."
         ),
     )
+    parser.add_argument(
+        "--priority-phi",
+        type=float,
+        default=BatchDatasetConfig().priority_phi,
+        help="Mallows phi for category priorities.",
+    )
+    parser.add_argument(
+        "--preference-phi",
+        type=float,
+        default=BatchDatasetConfig().preference_phi,
+        help="Mallows phi for agent preferences.",
+    )
     args = parser.parse_args()
 
     if args.count <= 0:
         raise ValueError("--count must be positive")
     if args.count > len(BATCH_DATASET_SEEDS):
         raise ValueError(f"--count must be <= {len(BATCH_DATASET_SEEDS)}")
+    if not (0 < args.priority_phi <= 1.0):
+        raise ValueError("--priority-phi must be in (0, 1].")
+    if not (0 < args.preference_phi <= 1.0):
+        raise ValueError("--preference-phi must be in (0, 1].")
 
     algo_keys = _normalize_algorithms(args.algorithms)
     available = {key for _, key in _available_algorithms()}
@@ -220,7 +245,12 @@ def main() -> None:
         raise ValueError(f"Unknown algorithms: {', '.join(unknown)}")
 
     for num_agents in args.sizes:
-        datasets = _build_datasets(num_agents, args.count)
+        datasets = _build_datasets(
+            num_agents,
+            args.count,
+            args.priority_phi,
+            args.preference_phi,
+        )
         for name, key in _available_algorithms():
             if key not in algo_keys:
                 continue

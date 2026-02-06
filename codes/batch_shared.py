@@ -9,7 +9,7 @@ class BatchDatasetConfig:
     num_agents: int = 35
     num_categories: int = 10
     capacity_ratio: float = 1.0
-    capacity_std: float = 0.2
+    capacity_std: float = 0.0
     eligibility_prob: float = 0.55
     priority_phi: float = 0.8
     preference_phi: float = 0.7
