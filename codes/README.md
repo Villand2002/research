@@ -21,6 +21,16 @@ find results -name "*.py" -exec python {} \;
 
 ### makefileによる実行例
 ```bash
+cd codes
 make batch-compare SIZES="50 100 1000" COUNT=100
 ```
 で全部のアルゴリズムに関して実行できる
+
+
+### 普通に実行する方法
+```bash
+cd codes
+python3 results/run_all_batches_by_size.py --sizes 50 100 --count 20 --priority-phi 0.85 --preference-phi 0.65
+
+```
+
