@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.algorithm.mma import execute_mma_on_dataset
+from codes.algorithm.da import execute_da_on_dataset
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
@@ -45,6 +46,18 @@ def _run_rev(datasets: List[Dataset]) -> float:
         if not feasible:
             raise AssertionError(
                 f"REV produced infeasible matching on dataset {idx}: {violations} violations"
+            )
+    return time.perf_counter() - start
+
+
+def _run_da(datasets: List[Dataset]) -> float:
+    start = time.perf_counter()
+    for idx, dataset in enumerate(datasets):
+        outcome = execute_da_on_dataset(dataset)
+        feasible, violations = outcome.verify_feasible(dataset)
+        if not feasible:
+            raise AssertionError(
+                f"DA produced infeasible matching on dataset {idx}: {violations} violations"
             )
     return time.perf_counter() - start
 
@@ -125,6 +138,7 @@ def main() -> None:
 
     durations: Dict[str, float] = {
         "MMA": _run_mma(datasets),
+        "DA": _run_da(datasets),
         "REV": _run_rev(datasets),
         "REV (bipartite)": _run_rev_bipartite(datasets),
         "SCU": _run_scu(datasets),

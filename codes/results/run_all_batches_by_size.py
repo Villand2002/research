@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from codes.algorithm.mma import execute_mma_on_dataset
+from codes.algorithm.da import execute_da_on_dataset
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
@@ -56,6 +57,20 @@ def _run_rev(datasets: List[Dataset], progress_every: int = 100) -> float:
             )
         if progress_every and (idx + 1) % progress_every == 0:
             print(f"[REV] processed {idx + 1}/{len(datasets)}")
+    return time.perf_counter() - start
+
+
+def _run_da(datasets: List[Dataset], progress_every: int = 100) -> float:
+    start = time.perf_counter()
+    for idx, dataset in enumerate(datasets):
+        outcome = execute_da_on_dataset(dataset)
+        feasible, violations = outcome.verify_feasible(dataset)
+        if not feasible:
+            raise AssertionError(
+                f"DA produced infeasible matching on dataset {idx}: {violations} violations"
+            )
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[DA] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
 
@@ -175,6 +190,7 @@ def _write_results(
 def _available_algorithms() -> List[Tuple[str, str]]:
     return [
         ("MMA", "mma"),
+        ("DA", "da"),
         ("REV", "rev"),
         ("REV (bipartite)", "rev_bipartite"),
         ("SCU", "scu"),
@@ -211,7 +227,7 @@ def main() -> None:
         nargs="+",
         default=[],
         help=(
-            "Algorithms to run. Choices: mma, rev, rev_bipartite, scu, scucomb. "
+            "Algorithms to run. Choices: mma, da, rev, rev_bipartite, scu, scucomb. "
             "Default: all."
         ),
     )
@@ -256,6 +272,8 @@ def main() -> None:
                 continue
             if key == "mma":
                 duration = _run_mma(datasets)
+            elif key == "da":
+                duration = _run_da(datasets)
             elif key == "rev":
                 duration = _run_rev(datasets)
             elif key == "rev_bipartite":
