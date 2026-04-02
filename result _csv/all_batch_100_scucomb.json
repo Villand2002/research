@@ -1,0 +1,6 @@
+{
+  "num_agents": 100,
+  "count": 100,
+  "algorithm": "SCUcomb",
+  "duration_seconds": 2.6692
+}

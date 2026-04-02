@@ -1,0 +1,6 @@
+{
+  "num_agents": 1000,
+  "count": 100,
+  "algorithm": "DA",
+  "duration_seconds": 8.4807
+}

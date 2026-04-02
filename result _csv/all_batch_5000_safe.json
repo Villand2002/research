@@ -1,0 +1,6 @@
+{
+  "num_agents": 5000,
+  "count": 20,
+  "algorithm": "Safe",
+  "duration_seconds": 689.3799
+}

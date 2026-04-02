@@ -1,0 +1,59 @@
+name: verify test result
+
+on:
+  push:
+    branches:
+      - main
+      - add/*
+      - master
+      - fix*
+  pull_request:
+    branches:
+      - main
+      - master
+
+
+jobs:
+  verify_result:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codes
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run codes style check
+        run: ruff check . --fix --select F,I
+
+
+      - name: Run tests
+        run: |
+          pytest tests/ > result.log || true
+
+      - name: Upload test result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-result-log
+          path: codes/result.log
+
+
+      - name : Verify test results
+        run: |
+          if grep -q "FAILED" result.log; then
+            echo "Some tests have failed. See result.log for details."
+            exit 1
+          else
+            echo "All tests passed successfully."
+          fi
+      - name: finish
+        run: echo "Verification process completed."
