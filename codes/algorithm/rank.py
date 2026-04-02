@@ -1,7 +1,8 @@
 import networkx as nx
 from typing import Dict, List, Tuple
-from dataset import Dataset, Outcome
-import time
+from codes.agent import Agents, Category, Outcome
+from codes.data_generation.dataset import Dataset
+
 
 class RankSolver:
     def __init__(self, agents: List[int], categories: List[Dict]):
@@ -63,8 +64,9 @@ def execute_rank_on_dataset(dataset: Dataset) -> Outcome:
     agents_obj, categories_obj = dataset.to_algorithm_inputs()
     agent_ids = [ag.agent_id for ag in agents_obj.agents]
     
-    # データセットの preference（選好）を Rank リストとして使用
-    agent_ranks = {ag.agent_id: ag.preferences for ag in agents_obj.agents}
+    # エラー箇所を修正: ag.preferences -> ag.acceptable_categories
+    # このリストの順序を「Rank（希望順位）」として扱います
+    agent_ranks = {ag.agent_id: ag.acceptable_categories for ag in agents_obj.agents}
     
     cat_dicts = [{
         'id': c.category_id,
@@ -76,4 +78,3 @@ def execute_rank_on_dataset(dataset: Dataset) -> Outcome:
     matching_dict = solver.solve(agent_ranks)
     
     return Outcome(dataset_id=dataset.id, algorithm_name="Rank", matching=matching_dict)
-

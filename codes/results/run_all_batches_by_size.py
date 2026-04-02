@@ -314,6 +314,9 @@ def main() -> None:
                 duration = _run_scu_comb(datasets)
             elif key == "safe":
                 duration = _run_safe(datasets) # 追加
+
+            elif key == "rank":
+                duration = _run_rank(datasets) # 追加
             else:
                 raise AssertionError(f"Unhandled algorithm key: {key}")
             _write_results(num_agents, args.count, name, key, duration)
