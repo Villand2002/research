@@ -22,6 +22,7 @@ from codes.algorithm.da import execute_da_on_dataset
 from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
+from codes.algorithm.safe import execute_safe_on_dataset
 from codes.algorithm.scu_comb import SCUcomb
 from codes.batch_shared import (
     BATCH_DATASET_SEEDS,
@@ -30,6 +31,21 @@ from codes.batch_shared import (
     build_scu_inputs_from_dataset,
 )
 from codes.data_generation.dataset import Dataset
+
+
+def _run_safe(datasets: List[Dataset], progress_every: int = 100) -> float:
+    start = time.perf_counter()
+    for idx, dataset in enumerate(datasets):
+        # 戦略を固定して実行
+        outcome = execute_safe_on_dataset(dataset)
+        feasible, violations = outcome.verify_feasible(dataset)
+        if not feasible:
+            raise AssertionError(
+                f"Safe produced infeasible matching on dataset {idx}: {violations} violations"
+            )
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[Safe] processed {idx + 1}/{len(datasets)}")
+    return time.perf_counter() - start
 
 
 def _run_mma(datasets: List[Dataset], progress_every: int = 100) -> float:
@@ -195,8 +211,8 @@ def _available_algorithms() -> List[Tuple[str, str]]:
         ("REV (bipartite)", "rev_bipartite"),
         ("SCU", "scu"),
         ("SCUcomb", "scucomb"),
+        ("Safe", "safe"),  # 追加
     ]
-
 
 def _normalize_algorithms(values: Iterable[str]) -> List[str]:
     if not values:
@@ -282,6 +298,8 @@ def main() -> None:
                 duration = _run_scu(datasets)
             elif key == "scucomb":
                 duration = _run_scu_comb(datasets)
+            elif key == "safe":
+                duration = _run_safe(datasets) # 追加
             else:
                 raise AssertionError(f"Unhandled algorithm key: {key}")
             _write_results(num_agents, args.count, name, key, duration)
