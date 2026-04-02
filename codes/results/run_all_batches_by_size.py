@@ -23,6 +23,7 @@ from codes.algorithm.rev import execute_rev_on_dataset
 from codes.algorithm.rev_bipartite import execute_rev_on_dataset as execute_rev_bipartite_on_dataset
 from codes.algorithm.scu import SCUSolver
 from codes.algorithm.safe import execute_safe_on_dataset
+from codes.algorithm.rank import execute_rank_on_dataset
 from codes.algorithm.scu_comb import SCUcomb
 from codes.batch_shared import (
     BATCH_DATASET_SEEDS,
@@ -166,6 +167,17 @@ def _run_scu_comb(datasets: List[Dataset], progress_every: int = 100) -> float:
             print(f"[SCUcomb] processed {idx + 1}/{len(datasets)}")
     return time.perf_counter() - start
 
+def _run_rank(datasets: List[Dataset], progress_every: int = 100) -> float:
+    start = time.perf_counter()
+    for idx, dataset in enumerate(datasets):
+        outcome = execute_rank_on_dataset(dataset)
+        # 整合性チェック
+        feasible, violations = outcome.verify_feasible(dataset)
+        if not feasible:
+            raise AssertionError(f"Rank produced infeasible matching: {violations}")
+        if progress_every and (idx + 1) % progress_every == 0:
+            print(f"[Rank] processed {idx + 1}/{len(datasets)}")
+    return time.perf_counter() - start
 
 def _build_datasets(
     num_agents: int,
@@ -212,6 +224,8 @@ def _available_algorithms() -> List[Tuple[str, str]]:
         ("SCU", "scu"),
         ("SCUcomb", "scucomb"),
         ("Safe", "safe"),  # 追加
+        ("Rank", "rank"),  # 追加
+        ("All", "all"),    # 追加
     ]
 
 def _normalize_algorithms(values: Iterable[str]) -> List[str]:
